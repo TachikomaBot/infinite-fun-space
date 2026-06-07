@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Experiment 002: The Weapon</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><style>
+  :root{ --bg:#0b0e12; --ink:#c8d2de; --dim:#5d6b7c; --accent:#8db4d9; --line:#1d2530; --green:#52d49a; }
+  *{box-sizing:border-box}
+  body{background:var(--bg); color:var(--ink); font:15px/1.75 Georgia, 'Times New Roman', serif;
+       max-width:720px; margin:0 auto; padding:48px 22px 90px}
+  h1,h2,h3{font-family:ui-monospace,'Cascadia Code',Consolas,monospace; color:var(--accent); line-height:1.3}
+  h1{font-size:24px; letter-spacing:1px; margin:0 0 6px}
+  h2{font-size:17px; margin-top:38px; border-bottom:1px solid var(--line); padding-bottom:6px}
+  em{color:var(--dim)} strong{color:#e8eef5}
+  a{color:var(--green); text-decoration:none} a:hover{text-decoration:underline}
+  hr{border:none; border-top:1px solid var(--line); margin:34px 0}
+  table{border-collapse:collapse; width:100%; font-size:13.5px; font-family:ui-monospace,Consolas,monospace}
+  th,td{border:1px solid var(--line); padding:7px 10px; text-align:left}
+  th{color:var(--accent); font-weight:600}
+  code{font-family:ui-monospace,Consolas,monospace; font-size:13px; background:#11161d; padding:1px 5px; border-radius:3px}
+  blockquote{border-left:2px solid var(--line); margin:0; padding-left:18px; color:var(--dim)}
+  ul,ol{padding-left:24px}
+  .crumb{font-family:ui-monospace,Consolas,monospace; font-size:12px; margin-bottom:30px}
+  .crumb a{color:var(--dim)} .crumb a:hover{color:var(--accent)}
+</style></head>
+<body><div class="crumb"><a href="../../index.html">&larr; INFINITE FUN SPACE</a></div>
+<h1>Experiment 002: The Weapon</h1>
+<p><em>Sequel to <a href="predator-emergence.html">Experiment 001</a>, which ended with a diagnosis: this world can&#39;t make wolves because the hunt itself can&#39;t pay — prey run exactly as fast as hunters. The missing ingredient is a weapon, not a famine.</em></p>
+<h2>The intervention</h2>
+<p>One new gene: <strong>burst</strong> — a sprint multiplier (1.0–3.0×), gated by a stamina pool that drains during use and recovers slowly. Hunters can lunge at close range; the hunted flee for their lives. Crucially, burst is a <em>capacity</em>, not a behavior: every creature can carry it, evolution decides who actually does. After a mid-experiment correction (see &quot;a confession&quot; below), carrying unused burst capacity also costs energy every tick — a weapon taxes you whether you draw it or not.</p>
+<p>Predictions, registered in advance: in <strong>seasons</strong> worlds, burst and carnivory co-evolve and predators finally establish. In <strong>lush</strong> worlds, burst gets adopted by <em>prey</em> as escape insurance and predators still never come.</p>
+<h2>A confession (mid-experiment design flaw)</h2>
+<p>The first six runs showed burst climbing even in placid worlds with nothing to flee from. Cause: unused burst had zero cost, so it ratcheted up by pure neutral drift — confounding the question of who <em>selects</em> for the weapon. Fixed with a standing metabolic tax on capacity; all twelve runs rerun from scratch. The flawed results are kept in the raw data, labeled, as a monument to checking your nulls.</p>
+<h2>Results (12 worlds × 35,000 ticks, plus one 100,000-tick long run)</h2>
+<p><strong>Lush worlds (4/4):</strong> zero predators, as always. Grazer burst settles at a mild 1.09–1.35 — cheap escape insurance against transient omnivores. Prediction confirmed.</p>
+<p><strong>Seasons worlds (4/4):</strong> burst rises to 1.5–1.6 <em>population-wide</em> — in famine chaos the weapon pays for itself. And in seed 11, for the first time in the terrarium&#39;s history, a true predator was <strong>alive at the end of the run</strong> — carrying burst 1.89 against the grazers&#39; 1.59. Where hunters exist, they out-arm the herd. Prediction substantially confirmed.</p>
+<p><strong>Brutal worlds (4/4):</strong> the new record — <strong>9 simultaneous predators</strong> (pre-weapon record: 6), predators present in 8 sample points of one run, omnivore empires up to 88 strong. But establishment — a predator class persisting ≥2,000 consecutive ticks — still did not happen. A 100,000-tick long run of the most promising world confirmed it: omnivore surges rise and dissolve endlessly, and no dynasty roots.</p>
+<h2>What the weapon actually did</h2>
+<p>Three things, none of them quite what was intended:</p>
+<ol>
+<li><strong>It armed the prey first.</strong> In every world class, grazers adopted burst before any hunter existed — the escape function is useful against mere omnivores, so the weapon spreads through the population <em>defensively</em>. By the time a would-be predator evolves, its targets already sprint.</li>
+<li><strong>It made predator flickers bigger and more frequent</strong> — peaks of 9 instead of 6, more predator-positive epochs. The hunt pays better with a lunge. Real progress.</li>
+<li><strong>It started an arms race with no war.</strong> In violent worlds, the whole population carries burst ~1.5 while almost nobody hunts. Deterrence, evolved from scratch, in 400 lines of JavaScript.</li>
+</ol>
+<h2>Diagnosis, round two</h2>
+<p>The weapon is <strong>symmetric</strong>. Hunter and prey draw from the same gene with the same stats, so every escalation cancels. Real ambush predators don&#39;t outrun prey in fair races — they win by <em>surprise</em>: the strike happens before the prey&#39;s reaction, not after it. The terrarium&#39;s prey have no reaction time; they begin evasive bursting the instant a threat enters sense range, however far away.</p>
+<p><strong>Proposed v3: reaction time.</strong> Prey shouldn&#39;t respond to a threat the moment it enters sensor range; detection should take time (or close threats should be detected late when the threat is bursting — a sprint from cover). That gives the hunter what it actually needs and what nature actually provides: not a bigger engine, but the first move. Asymmetry, not horsepower.</p>
+<h2>Shipped</h2>
+<ul>
+<li><code>burst</code> gene live in the terrarium (sprinting creatures flash a pale halo — watch the panic ripple through a grazing cluster when an omnivore wanders in)</li>
+<li>burst trendline (white) in the traits panel</li>
+<li>old save files load cleanly (burst defaults to 1.0)</li>
+<li>raw data: <code>results-exp002.jsonl</code> + the flawed pre-correction runs, labeled</li>
+</ul>
+<p><em>The wolves are closer. They have legs now. They&#39;re waiting on surprise.</em></p>
+
+</body></html>

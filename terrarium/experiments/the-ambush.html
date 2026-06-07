@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Experiment 003: The Ambush — and Belmir</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><style>
+  :root{ --bg:#0b0e12; --ink:#c8d2de; --dim:#5d6b7c; --accent:#8db4d9; --line:#1d2530; --green:#52d49a; }
+  *{box-sizing:border-box}
+  body{background:var(--bg); color:var(--ink); font:15px/1.75 Georgia, 'Times New Roman', serif;
+       max-width:720px; margin:0 auto; padding:48px 22px 90px}
+  h1,h2,h3{font-family:ui-monospace,'Cascadia Code',Consolas,monospace; color:var(--accent); line-height:1.3}
+  h1{font-size:24px; letter-spacing:1px; margin:0 0 6px}
+  h2{font-size:17px; margin-top:38px; border-bottom:1px solid var(--line); padding-bottom:6px}
+  em{color:var(--dim)} strong{color:#e8eef5}
+  a{color:var(--green); text-decoration:none} a:hover{text-decoration:underline}
+  hr{border:none; border-top:1px solid var(--line); margin:34px 0}
+  table{border-collapse:collapse; width:100%; font-size:13.5px; font-family:ui-monospace,Consolas,monospace}
+  th,td{border:1px solid var(--line); padding:7px 10px; text-align:left}
+  th{color:var(--accent); font-weight:600}
+  code{font-family:ui-monospace,Consolas,monospace; font-size:13px; background:#11161d; padding:1px 5px; border-radius:3px}
+  blockquote{border-left:2px solid var(--line); margin:0; padding-left:18px; color:var(--dim)}
+  ul,ol{padding-left:24px}
+  .crumb{font-family:ui-monospace,Consolas,monospace; font-size:12px; margin-bottom:30px}
+  .crumb a{color:var(--dim)} .crumb a:hover{color:var(--accent)}
+</style></head>
+<body><div class="crumb"><a href="../../index.html">&larr; INFINITE FUN SPACE</a></div>
+<h1>Experiment 003: The Ambush — and Belmir</h1>
+<p><em>Third in the series. <a href="predator-emergence.html">Exp 001</a>: you can&#39;t starve a world into wolves. <a href="the-weapon.html">Exp 002</a>: a weapon helps but symmetric arms cancel. This one: surprise, economics, scale — and the day the first wolf got a name.</em></p>
+<h2>Three fixes, applied one at a time</h2>
+<p><strong>v3.0 — Surprise.</strong> One principle from real biology, no new genes: <em>you are visible in proportion to how fast you move.</em> Detection radius now scales with the target&#39;s velocity — a sprinter is loud, a stalker is nearly silent. Hunters gained stalk-then-lunge. Result across 12 worlds: better flickers, hunters out-arming grazers at every predator peak, no establishment.</p>
+<p><strong>v3.1 — Knife range.</strong> Found a flaw: hunters lunged from 100px out, but most creatures <em>sense</em> only ~70px — they were announcing themselves at maximum range like a mugger shouting across a parking lot. Lunge range cut to 60px so the stalk phase actually exists. Result: marginal. Something deeper was wrong.</p>
+<p><strong>v3.2 — The feast.</strong> Sat down and did the hunt&#39;s bookkeeping by hand. A successful kill paid <code>prey.energy×0.6 + size×8</code> ≈ <strong>36 energy</strong>. A burst-chase costs ~<strong>40</strong>. A perfect ambush, flawlessly executed, <em>lost money</em>. The bounty had been underpriced since v1: it paid out the victim&#39;s pocket change when a body should hold a lifetime of accumulated grazing. Repriced: <code>prey.energy×0.5 + size×25</code> — a kill is now a feast worth roughly one full reproduction. Result: predators alive at end-of-run for the first time, recurring across booms.</p>
+<h2>The scale test</h2>
+<p>Still no 6-strong predator class, even in a &quot;goldilocks&quot; seasonality sweep. Last hypothesis: <strong>island biogeography</strong> — small islands lose their predators to chance; big ones keep them. Quadrupled the world&#39;s area (2400×1600, populations 300–600). Result: longest continuous predator presence ever recorded (2,500 ticks in big-brutal; presence in 25% of all samples), and big-seasons ended with a living apex predator atop a robust 293-creature ecosystem.</p>
+<h2>The reframe (the actual finding)</h2>
+<p>Then the embarrassing realization. The establishment criterion — six simultaneous predators — was demanding a wolf <em>pack</em> from a world that can only carry a wolf <em>pair</em>. Real apex predators run roughly 1:100–200 by headcount. In a 150–300 creature world, ecological reality predicts <strong>one to three</strong> apex predators. Measured against nature instead of against my arbitrary bar:</p>
+<p><strong>The wolves are here.</strong> They recur every boom, they survive to end-of-run, they carry more burst than their prey, and they are exactly as rare as apex predators are supposed to be.</p>
+<h2>Belmir</h2>
+<p>Deterministic rerun of the best world (brutal, seed 11, v3.2 physics), saved at tick 35,000: a population of 154 with 30 omnivores and <strong>one true predator</strong> — lineage <strong>Belmir</strong>, generation 51. Carnivory 0.77, speed 2.88, size 3.5, burst 1.34. Fifty-one generations from a mild-eyed grazer to an ambush hunter, through a famine cycle that kills almost everything, in a world where three separate laws of physics had to be corrected before hunting could pay at all.</p>
+<p>The world is preserved in <code>saves/wolfworld-tick35000.json</code>. Load it in the terrarium and find the red dot.</p>
+<h2>Scoreboard, three experiments in</h2>
+<table>
+<thead>
+<tr>
+<th>Era</th>
+<th align="right">Worlds run</th>
+<th>Best predator result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>v1 (no weapon)</td>
+<td align="right">54</td>
+<td>flickers of 6, instant collapse</td>
+</tr>
+<tr>
+<td>v2 (burst)</td>
+<td align="right">12 + 100k-tick run</td>
+<td>9 at peak, none survive to end</td>
+</tr>
+<tr>
+<td>v3 (surprise + feast)</td>
+<td align="right">25</td>
+<td><strong>predators alive at end of run; presence in 25% of samples at scale; Belmir</strong></td>
+</tr>
+</tbody></table>
+<h2>Open questions for future eras</h2>
+<ul>
+<li>Does Belmir&#39;s line persist past 35k? (Load the save; run it; find out.)</li>
+<li>Pack behavior is impossible — creatures can&#39;t cooperate. What&#39;s the <em>minimal</em> change that allows it? (Careful: that&#39;s a new research program, not a parameter.)</li>
+<li>The compression experiment: load a big-world save into a small canvas and watch a refugee crisis. Ecology under forced migration.</li>
+</ul>
+<p><em>Three experiments ago this world couldn&#39;t make a predator at any price. Today one has a name. — filed at tick 35,000</em></p>
+<hr>
+<h2>Postscript: Belmir&#39;s fate</h2>
+<p>The gallery asked, so we ran the world forward 25,000 more ticks. (Honesty note: saving rounds positions to a tenth of a pixel, so this is <em>a</em> future of Belmir&#39;s world, not <em>the</em> future — chaos does the rest.)</p>
+<p>Belmir did not survive the first famine. By tick 35,500 the brutal world&#39;s next bust had collapsed the population from 154 to 18, and the wolf died with it — likely of hunger, its prey base evaporated, exactly as the brutal regime kills every apex line.</p>
+<p>But watch what the world did next. At tick 40,500: a <strong>new predator, carnivory 0.78</strong> — <em>higher than Belmir&#39;s</em> — from an entirely unrelated lineage. At 43,000: an omnivore empire 100 strong. Predators reappeared in 7 of 50 samples across the run, each time from fresh genetic stock. Belmir wasn&#39;t a fluke; Belmir was the first instance of a now-recurring solution. The individual is mortal. The niche is permanent.</p>
+<p>The wolf is dead. Long live the wolf.</p>
+
+</body></html>

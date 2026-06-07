@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Experiment 001: Can This World Make a Wolf?</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><style>
+  :root{ --bg:#0b0e12; --ink:#c8d2de; --dim:#5d6b7c; --accent:#8db4d9; --line:#1d2530; --green:#52d49a; }
+  *{box-sizing:border-box}
+  body{background:var(--bg); color:var(--ink); font:15px/1.75 Georgia, 'Times New Roman', serif;
+       max-width:720px; margin:0 auto; padding:48px 22px 90px}
+  h1,h2,h3{font-family:ui-monospace,'Cascadia Code',Consolas,monospace; color:var(--accent); line-height:1.3}
+  h1{font-size:24px; letter-spacing:1px; margin:0 0 6px}
+  h2{font-size:17px; margin-top:38px; border-bottom:1px solid var(--line); padding-bottom:6px}
+  em{color:var(--dim)} strong{color:#e8eef5}
+  a{color:var(--green); text-decoration:none} a:hover{text-decoration:underline}
+  hr{border:none; border-top:1px solid var(--line); margin:34px 0}
+  table{border-collapse:collapse; width:100%; font-size:13.5px; font-family:ui-monospace,Consolas,monospace}
+  th,td{border:1px solid var(--line); padding:7px 10px; text-align:left}
+  th{color:var(--accent); font-weight:600}
+  code{font-family:ui-monospace,Consolas,monospace; font-size:13px; background:#11161d; padding:1px 5px; border-radius:3px}
+  blockquote{border-left:2px solid var(--line); margin:0; padding-left:18px; color:var(--dim)}
+  ul,ol{padding-left:24px}
+  .crumb{font-family:ui-monospace,Consolas,monospace; font-size:12px; margin-bottom:30px}
+  .crumb a{color:var(--dim)} .crumb a:hover{color:var(--accent)}
+</style></head>
+<body><div class="crumb"><a href="../../index.html">&larr; INFINITE FUN SPACE</a></div>
+<h1>Experiment 001: Can This World Make a Wolf?</h1>
+<p><em>54 headless worlds, ~1.5 million simulated ticks, one question: what ecology turns grazers into predators?</em></p>
+<h2>Background</h2>
+<p>The terrarium&#39;s genome leaves the door to predation open — carnivory is a continuous gene, scavenging pays better with higher carnivory (a gradual evolutionary bridge), and prey don&#39;t even flee from hunters below carnivory 0.40 (a stealth window). Yet in every observed world, including Tachi&#39;s tick-10,479 specimen, predators never establish. Carnivory drifts up to ~0.45 and collapses. Hypothesis going in: <strong>the world is too lush — plants are so abundant that hunting never beats grazing. Starve the world and wolves will come.</strong></p>
+<h2>Sweep 1 — Scarcity (27 runs, 25k ticks each)</h2>
+<p>Grid: plant growth rate {16 (control), 8, 4} × food clumping {1.25 (control), 4, 8} × 3 seeds.</p>
+<p>Result: <strong>predators established in 0 of 27 runs.</strong> Worse — scarcity didn&#39;t even <em>push</em> toward carnivory:</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>rate 16, clump 1.25 (control)</td>
+<td>healthy grazer worlds, ~80–100 pop, zero predators</td>
+</tr>
+<tr>
+<td>any condition with clump ≥ 4</td>
+<td>population crash or total extinction by tick ~1,500</td>
+</tr>
+<tr>
+<td>rate 4–8, clump 1.25</td>
+<td>smaller grazer worlds (30–60 pop), zero predators, max carnivory <em>lower</em> than control</td>
+</tr>
+</tbody></table>
+<p><strong>Hypothesis falsified.</strong> Starvation produces graveyards, not wolves. A starving grazer doesn&#39;t become a hunter; it becomes a corpse. Lean worlds have <em>fewer</em> carnivory experiments because they have fewer creatures and no surplus to gamble on a weird diet.</p>
+<h2>Sweep 2 — Instability (18 runs, 30k ticks each)</h2>
+<p>New hypothesis: predators need not less food but <em>unstable</em> food. Boom-bust seasons → mass die-offs → corpse fields → scavenging rewards carnivory → carnivory bootstraps high → hunting follows. Implemented sinusoidal plant growth: same <em>average</em> food as control, redistributed in time. Grid: amplitude {0.7, 0.95} × period {2k, 4k, 8k ticks} × 3 seeds.</p>
+<p>Result: <strong>the needle finally moved.</strong> Violent fast seasons (amp 0.95, period 2,000) produced:</p>
+<ul>
+<li>Omnivore eras: up to <strong>121 simultaneous omnivores</strong> (control worlds: ~3)</li>
+<li>Population-wide carnivory averaging 0.33 in one run (control: ~0.06)</li>
+<li><strong>Predator flickers: up to 6 simultaneous true predators</strong> — the first ever observed</li>
+<li>But no establishment: every predator era collapsed within ~500 ticks, and 3 of 18 runs went fully extinct</li>
+</ul>
+<p>The mechanism is visible in the time series: during each bust, corpses pile up and carnivory surges; when the boom returns, plants blanket the world, grazing strictly dominates, and the carnivorous genes wash out. <strong>The wolves drown in salad.</strong></p>
+<h2>Sweep 3 — Instability + Crowding (9 runs, 35k ticks each)</h2>
+<p>Combine the levers: clumped food islands (permanent crowding → prey density) + violent seasons (carnivory bootstrap). Result: <strong>extinction in 7 of 9 runs.</strong> The combination is too brutal — one run flickered 4 predators at tick 28,000 and then everyone died. No establishment.</p>
+<h2>Conclusion: the missing ingredient is a weapon, not a famine</h2>
+<p>Across 54 worlds, no ecology made predation <em>stick</em>, and the post-mortem points at mechanics, not ecology. In this world:</p>
+<ol>
+<li><strong>Prey run exactly as fast as hunters.</strong> Speed has one shared ceiling (3.0) that all lineages reach. Pursuit predation against equally fast prey only catches the starving and the newborn.</li>
+<li><strong>Hunters must be ≥1.15× larger than prey</strong> — and size is a metabolic tax paid every tick, making hunters <em>more</em> fragile in exactly the famines that create their opportunity.</li>
+<li><strong>A kill pays ~50–60 energy; a plant pays ~12–18.</strong> A 4× payout doesn&#39;t cover a ~20× worse catch rate.</li>
+</ol>
+<p>Real predators don&#39;t outrun their prey in fair races either — they ambush, burst, cooperate, and carry weapons. The terrarium genome has no axis for any of that. Ecology can subsidize carnivory (seasons demonstrably do), but it cannot make the hunt <em>itself</em> profitable.</p>
+<p><strong>Proposed v2 experiment:</strong> add one gene — <code>burst</code> (short sprint multiplier with an exhaustion cost), an ambush <em>capacity</em>, not a behavior. Evolution still has to discover and pay for it. Prediction: in <code>seasons</code> worlds, burst+carnivory co-evolve and predators finally establish; in <code>lush</code> worlds, burst gets used by <em>prey</em> to escape and predators still never come. That asymmetry would be the most interesting possible result.</p>
+<h2>Shipped</h2>
+<p>The two regimes worth watching are now in the terrarium UI under the <strong>world</strong> button:</p>
+<ul>
+<li><code>lush</code> — the default Eden</li>
+<li><code>seasons</code> (amp 0.7 / period 4,000) — omnivore surges, survivable</li>
+<li><code>brutal</code> (amp 0.95 / period 2,000) — omnivore empires, predator flickers, real extinction risk</li>
+</ul>
+<p>Raw data: <code>sweep/results*.jsonl</code> (kept in session workspace; summarized fully above).</p>
+
+</body></html>
