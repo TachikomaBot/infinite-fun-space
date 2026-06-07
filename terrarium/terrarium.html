@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Terrarium — an evolving world</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#0b0e12; --panel:#11161d; --ink:#cfd8e3; --dim:#6b7a8c;
+    --line:#1d2530; --accent:#5dd6a2; --warn:#e0b35d; --bad:#e06a6a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:var(--bg); color:var(--ink); font:13px/1.45 ui-monospace,'Cascadia Code',Consolas,monospace; overflow:hidden}
+  #wrap{display:flex; height:100vh}
+  #world{flex:1; display:block; cursor:crosshair}
+  #panel{width:300px; background:var(--panel); border-left:1px solid var(--line); padding:14px; overflow-y:auto; flex-shrink:0}
+  h1{font-size:15px; letter-spacing:3px; color:var(--accent); font-weight:600}
+  .sub{color:var(--dim); font-size:11px; margin-bottom:10px}
+  .row{display:flex; justify-content:space-between; padding:1px 0}
+  .row span:last-child{color:var(--accent)}
+  .sect{border-top:1px solid var(--line); margin-top:10px; padding-top:8px}
+  .sect h2{font-size:10px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; margin-bottom:6px}
+  canvas.spark{width:100%; height:56px; background:#0d1117; border:1px solid var(--line); border-radius:3px}
+  .legend{display:flex; gap:10px; font-size:10px; color:var(--dim); margin-top:3px; flex-wrap:wrap}
+  .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:3px; vertical-align:middle}
+  .btns{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+  button{background:#18202b; color:var(--ink); border:1px solid var(--line); border-radius:4px; padding:6px 4px; font:inherit; font-size:11px; cursor:pointer}
+  button:hover{border-color:var(--accent); color:var(--accent)}
+  button.danger:hover{border-color:var(--bad); color:var(--bad)}
+  #log{font-size:11px; max-height:170px; overflow-y:auto}
+  #log div{padding:2px 0; color:var(--dim); border-bottom:1px dotted var(--line)}
+  #log div b{color:var(--ink); font-weight:600}
+  #log .ev-bad b{color:var(--bad)} #log .ev-good b{color:var(--accent)} #log .ev-warn b{color:var(--warn)}
+  #inspector{font-size:11px}
+  .gbar{height:7px; background:#0d1117; border-radius:3px; margin:2px 0 6px; overflow:hidden}
+  .gbar i{display:block; height:100%; background:var(--accent)}
+  .glabel{display:flex; justify-content:space-between; color:var(--dim); font-size:10px}
+  #deadnote{color:var(--dim); font-size:11px; font-style:italic}
+  ::-webkit-scrollbar{width:8px} ::-webkit-scrollbar-thumb{background:#222c38; border-radius:4px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="world"></canvas>
+  <div id="panel">
+    <h1>TERRARIUM</h1>
+    <div class="sub">an evolving world · <span id="seedlbl"></span></div>
+
+    <div class="row"><span>tick</span><span id="s-tick">0</span></div>
+    <div class="row"><span>creatures</span><span id="s-pop">0</span></div>
+    <div class="row"><span>plants</span><span id="s-plants">0</span></div>
+    <div class="row"><span>lineages alive</span><span id="s-lin">0</span></div>
+    <div class="row"><span>highest generation</span><span id="s-gen">0</span></div>
+
+    <div class="sect">
+      <h2>Population</h2>
+      <canvas class="spark" id="spark-pop" width="270" height="56"></canvas>
+      <div class="legend">
+        <span><i class="dot" style="background:#52d49a"></i>grazers</span>
+        <span><i class="dot" style="background:#e0c45d"></i>omnivores</span>
+        <span><i class="dot" style="background:#e05d7a"></i>predators</span>
+        <span><i class="dot" style="background:#2a5c3a"></i>plants ÷6</span>
+      </div>
+    </div>
+
+    <div class="sect">
+      <h2>Average traits (drift)</h2>
+      <canvas class="spark" id="spark-traits" width="270" height="56"></canvas>
+      <div class="legend">
+        <span><i class="dot" style="background:#5dc8e0"></i>speed</span>
+        <span><i class="dot" style="background:#b08de0"></i>size</span>
+        <span><i class="dot" style="background:#e0995d"></i>sense</span>
+        <span><i class="dot" style="background:#e05d7a"></i>carnivory</span>
+        <span><i class="dot" style="background:#e8e8e8"></i>burst</span>
+      </div>
+    </div>
+
+    <div class="sect">
+      <h2>Intervene</h2>
+      <div class="btns">
+        <button id="b-pause">⏸ pause</button>
+        <button id="b-speed">speed ×1</button>
+        <button id="b-bloom">🌱 bloom</button>
+        <button id="b-drought">☀ drought</button>
+        <button id="b-meteor" class="danger">☄ meteor</button>
+        <button id="b-genesis">✚ genesis</button>
+        <button id="b-world">world: lush</button>
+        <button id="b-save">⬇ save world</button>
+        <button id="b-load">⬆ load world</button>
+      </div>
+      <input type="file" id="loadfile" accept=".json" style="display:none">
+    </div>
+
+    <div class="sect">
+      <h2>Chronicle</h2>
+      <div id="log"></div>
+    </div>
+
+    <div class="sect">
+      <h2>Inspector <span style="color:var(--dim);text-transform:none">(click a creature)</span></h2>
+      <div id="inspector"><span id="deadnote">nothing selected</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   TERRARIUM — artificial life in a jar
+   Creatures carry a 5-gene genome. There is no script telling
+   predators to exist; if they appear, they evolved.
+   ============================================================ */
+
+// ==================== SIM CORE (DOM-free) ====================
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+const GENES = {
+  speed:  { min:0.2, max:3.0,  sd:0.10 },
+  size:   { min:2.0, max:9.0,  sd:0.22 },
+  sense:  { min:20,  max:120,  sd:4.0  },
+  carn:   { min:0,   max:1,    sd:0.045},
+  wander: { min:0.05,max:0.6,  sd:0.03 },
+  burst:  { min:1.0, max:3.0,  sd:0.06 },  // sprint multiplier; stamina-gated, exhausting
+};
+const GENE_KEYS = Object.keys(GENES);
+
+const SYL_A = ['ve','ka','mo','su','ta','li','or','ne','az','ru','ph','ze','ix','qua','bel','dro'];
+const SYL_B = ['ra','lin','dos','mir','vex','tha','nis','goth','ula','rin','pex','soth','ari','und'];
+
+function createSim(seed, W, H, opts){
+  opts = opts || {};
+  const ECO = {
+    plantRate: opts.plantRate ?? 16,
+    plantCap:  opts.plantCap  ?? 1200,
+    clump:     opts.clump     ?? 1.25,  // fertility sharpening exponent: higher = food islands in desert
+    fertFloor: opts.fertFloor ?? 0.30,  // noise level below which land is barren
+    seasonAmp: opts.seasonAmp ?? 0,     // 0..1: plant growth swings between (1-amp)x and (1+amp)x
+    seasonPeriod: opts.seasonPeriod ?? 4000, // ticks per full season cycle
+  };
+  const rng = mulberry32(seed);
+
+  // --- fertility field: value noise, sharpened into patches ---
+  function makeNoise(){
+    const N = 20, g = new Float64Array(N*N);
+    for (let i=0;i<N*N;i++) g[i] = rng();
+    const at = (x,y)=> g[((y%N+N)%N)*N + ((x%N+N)%N)];
+    return (u,v)=>{
+      const x=u*N, y=v*N, x0=Math.floor(x), y0=Math.floor(y);
+      const fx=x-x0, fy=y-y0, sx=fx*fx*(3-2*fx), sy=fy*fy*(3-2*fy);
+      const a=at(x0,y0), b=at(x0+1,y0), c=at(x0,y0+1), d=at(x0+1,y0+1);
+      return a+(b-a)*sx+(c-a)*sy+(a-b-c+d)*sx*sy;
+    };
+  }
+  const n1 = makeNoise(), n2 = makeNoise();
+  function fertility(x,y){
+    const f = 0.65*n1(x/W, y/H) + 0.35*n2(2*x/W, 2*y/H);
+    return Math.pow(Math.max(0, (f-ECO.fertFloor)/(1-ECO.fertFloor)), ECO.clump);
+  }
+
+  const S = {
+    W, H, seed, tick: 0,
+    rng, fertility,
+    creatures: [], plants: [], remains: [],
+    nextId: 1, nextLin: 1,
+    lineages: new Map(),     // id -> {name, founder:{genes}, parent, born, count, peak, extinct}
+    history: [],             // sampled stats
+    events: [],              // {t, kind, text}
+    plantCap: ECO.plantCap, plantRate: ECO.plantRate, plantBoost: 1, boostUntil: 0,
+    eco: ECO,
+    maxPop: 700, highestGen: 1,
+  };
+
+  function nameLineage(){
+    let s = SYL_A[(rng()*SYL_A.length)|0] + SYL_B[(rng()*SYL_B.length)|0];
+    if (rng() < 0.4) s += SYL_B[(rng()*SYL_B.length)|0];
+    return s[0].toUpperCase() + s.slice(1);
+  }
+
+  function logEvent(kind, text){
+    S.events.push({ t: S.tick, kind, text });
+    if (S.events.length > 400) S.events.splice(0, 100);
+  }
+
+  function newLineage(genes, parentLin){
+    const id = S.nextLin++;
+    S.lineages.set(id, { name: nameLineage(), founder: {...genes}, parent: parentLin||0,
+                         born: S.tick, count: 0, peak: 0, extinct: false });
+    return id;
+  }
+
+  function geneDist(a, b){
+    let s = 0;
+    for (const k of GENE_KEYS){
+      const r = GENES[k].max - GENES[k].min;
+      const d = (a[k]-b[k]) / r;
+      s += d*d;
+    }
+    return Math.sqrt(s);
+  }
+
+  function describeShift(from, to){
+    const adj = [];
+    const diff = (k)=> (to[k]-from[k]) / (GENES[k].max-GENES[k].min);
+    if (diff('speed') >  0.10) adj.push('swifter');
+    if (diff('speed') < -0.10) adj.push('slower');
+    if (diff('size')  >  0.10) adj.push('larger');
+    if (diff('size')  < -0.10) adj.push('smaller');
+    if (diff('sense') >  0.10) adj.push('keener-eyed');
+    if (diff('carn')  >  0.08) adj.push('more predatory');
+    if (diff('carn')  < -0.08) adj.push('gentler');
+    if (diff('burst') >  0.10) adj.push('explosive');
+    if (diff('burst') < -0.10) adj.push('steadier');
+    return adj.length ? adj.join(', ') : 'subtly different';
+  }
+
+  function spawnCreature(genes, x, y, energy, lin, gen){
+    const c = {
+      id: S.nextId++, lin, gen,
+      x, y, dir: rng()*Math.PI*2,
+      energy, age: 0, cooldown: 100, stam: 100, v: 0,
+      genes, alive: true,
+      target: null, fleeing: false, bursting: false,
+    };
+    S.creatures.push(c);
+    const L = S.lineages.get(lin);
+    if (L){ L.count++; if (L.count > L.peak) L.peak = L.count; }
+    if (gen > S.highestGen) S.highestGen = gen;
+    return c;
+  }
+
+  function mutate(genes){
+    const g = {...genes};
+    for (const k of GENE_KEYS){
+      const spec = GENES[k];
+      let sd = spec.sd;
+      if (rng() < 0.06) sd *= 4;           // rare macro-mutation
+      // Box-Muller-ish cheap gaussian
+      const gauss = (rng()+rng()+rng()-1.5) * 2;
+      g[k] = Math.min(spec.max, Math.max(spec.min, g[k] + gauss*sd));
+    }
+    return g;
+  }
+
+  function founderGenes(){
+    return mutate(mutate({ speed:1.2, size:3.5, sense:50, carn:0.05, wander:0.25, burst:1.0 }));
+  }
+
+  function genesis(n, label){
+    const lin = newLineage({ speed:1.2, size:3.5, sense:50, carn:0.05, wander:0.25, burst:1.0 }, 0);
+    for (let i=0;i<n;i++){
+      // cluster spawns in fertile areas
+      let x, y, tries = 0;
+      do { x = rng()*W; y = rng()*H; tries++; } while (fertility(x,y) < 0.25 && tries < 30);
+      spawnCreature(founderGenes(), x, y, 70 + rng()*40, lin, 1);
+    }
+    logEvent('good', `<b>${label||'Genesis'}</b> — ${n} simple grazers of lineage <b>${S.lineages.get(lin).name}</b> drift into being.`);
+    return lin;
+  }
+
+  function seedPlants(n){
+    for (let i=0;i<n;i++){
+      const x = rng()*W, y = rng()*H;
+      if (rng() < fertility(x,y)) S.plants.push({ x, y, e: 6 + rng()*12, alive: true });
+    }
+  }
+
+  // --- spatial hash, rebuilt per tick ---
+  const CELL = 64;
+  let gridW = Math.ceil(W/CELL), gridH = Math.ceil(H/CELL);
+  let grid = null;
+  function buildGrid(){
+    grid = { c: new Array(gridW*gridH), p: new Array(gridW*gridH), r: new Array(gridW*gridH) };
+    for (const c of S.creatures){ const i = cellIx(c.x,c.y); (grid.c[i] || (grid.c[i]=[])).push(c); }
+    for (const p of S.plants)   { const i = cellIx(p.x,p.y); (grid.p[i] || (grid.p[i]=[])).push(p); }
+    for (const r of S.remains)  { const i = cellIx(r.x,r.y); (grid.r[i] || (grid.r[i]=[])).push(r); }
+  }
+  function cellIx(x,y){
+    let cx = (x/CELL)|0, cy = (y/CELL)|0;
+    cx = Math.min(gridW-1, Math.max(0,cx)); cy = Math.min(gridH-1, Math.max(0,cy));
+    return cy*gridW + cx;
+  }
+  function* near(layer, x, y, rad){
+    const x0 = Math.max(0, ((x-rad)/CELL)|0), x1 = Math.min(gridW-1, ((x+rad)/CELL)|0);
+    const y0 = Math.max(0, ((y-rad)/CELL)|0), y1 = Math.min(gridH-1, ((y+rad)/CELL)|0);
+    for (let cy=y0; cy<=y1; cy++) for (let cx=x0; cx<=x1; cx++){
+      const arr = grid[layer][cy*gridW+cx];
+      if (arr) for (const e of arr) yield e;
+    }
+  }
+
+  function torusDelta(a, b, span){
+    let d = b - a;
+    if (d >  span/2) d -= span;
+    if (d < -span/2) d += span;
+    return d;
+  }
+
+  // --- the heart: one tick ---
+  function step(){
+    S.tick++;
+
+    // plant regrowth
+    const boost = S.tick < S.boostUntil ? S.plantBoost : 1;
+    const season = ECO.seasonAmp ? Math.max(0, 1 + ECO.seasonAmp * Math.sin(2*Math.PI*S.tick/ECO.seasonPeriod)) : 1;
+    const attempts = S.plantRate * boost * season;
+    for (let i=0; i<attempts; i++){
+      if (S.plants.length >= S.plantCap) break;
+      if (rng() < (attempts - i < 1 ? attempts - i : 1)){
+        const x = rng()*W, y = rng()*H;
+        if (rng() < fertility(x,y)*0.9) S.plants.push({ x, y, e: 3, alive: true });
+      }
+    }
+    for (const p of S.plants) if (p.e < 18) p.e += 0.08;
+
+    buildGrid();
+
+    // creatures act
+    for (const c of S.creatures){
+      if (!c.alive) continue;
+      const g = c.genes;
+      c.age++; if (c.cooldown > 0) c.cooldown--;
+
+      // ---- perceive ----
+      const sense = g.sense;
+      let threatDx=0, threatDy=0, threatened=false;
+      let best=null, bestScore=0, bestDx=0, bestDy=0, bestDist=0, bestKind='';
+
+      // threats + prey among creatures
+      for (const o of near('c', c.x, c.y, sense)){
+        if (o === c || !o.alive) continue;
+        const dx = torusDelta(c.x, o.x, W), dy = torusDelta(c.y, o.y, H);
+        const d2 = dx*dx + dy*dy;
+        if (d2 > sense*sense) continue;
+        const d = Math.sqrt(d2) || 0.001;
+        if (o.genes.carn > 0.40 && o.genes.size > g.size*1.12){
+          // you are seen in proportion to how fast you move: a stalker is
+          // quiet, a sprinter is loud. Surprise belongs to the slow approach.
+          const noiseR = sense * Math.min(1, 0.35 + 0.22*(o.v || 0));
+          if (d2 <= noiseR*noiseR){
+            threatened = true; threatDx -= dx/d/d; threatDy -= dy/d/d;
+          }
+        } else if (g.carn > 0.35 && g.size > o.genes.size*1.15 && c.cooldown <= 0){
+          const score = (o.energy*0.5 + o.genes.size*25) * g.carn / (d+8);
+          if (score > bestScore){ bestScore=score; best=o; bestDx=dx; bestDy=dy; bestDist=d; bestKind='prey'; }
+        }
+      }
+
+      // plants
+      const herbEff = 1 - 0.85*g.carn;
+      if (herbEff > 0.12){
+        for (const p of near('p', c.x, c.y, sense)){
+          if (!p.alive) continue;
+          const dx = torusDelta(c.x, p.x, W), dy = torusDelta(c.y, p.y, H);
+          const d2 = dx*dx + dy*dy;
+          if (d2 > sense*sense) continue;
+          const d = Math.sqrt(d2) || 0.001;
+          const score = p.e * herbEff / (d+8);
+          if (score > bestScore){ bestScore=score; best=p; bestDx=dx; bestDy=dy; bestDist=d; bestKind='plant'; }
+        }
+      }
+
+      // remains (scavenging — the bridge to carnivory)
+      const scavEff = 0.25 + 0.75*g.carn;
+      for (const r of near('r', c.x, c.y, sense)){
+        if (!r.alive) continue;
+        const dx = torusDelta(c.x, r.x, W), dy = torusDelta(c.y, r.y, H);
+        const d2 = dx*dx + dy*dy;
+        if (d2 > sense*sense) continue;
+        const d = Math.sqrt(d2) || 0.001;
+        const score = r.e * scavEff / (d+8);
+        if (score > bestScore){ bestScore=score; best=r; bestDx=dx; bestDy=dy; bestDist=d; bestKind='remains'; }
+      }
+
+      // ---- decide & move ----
+      let throttle = 0.45; // cruising
+      c.fleeing = false;
+      if (threatened){
+        c.dir = Math.atan2(threatDy, threatDx);
+        throttle = 1; c.fleeing = true;
+      } else if (best){
+        c.dir = Math.atan2(bestDy, bestDx);
+        // stalk-then-lunge: approach prey quietly, explode at knife range
+        throttle = (bestKind === 'prey' && bestDist > 60) ? 0.5 : 1;
+      } else {
+        c.dir += (rng()-0.5) * g.wander * 2;
+      }
+      let v = g.speed * throttle;
+      // burst: a stamina-gated sprint. Hunters lunge at close range; the hunted run for their lives.
+      const wantBurst = (threatened || (best && bestKind === 'prey' && bestDist < 60));
+      c.bursting = false;
+      if (wantBurst && g.burst > 1.05 && c.stam > 15){
+        v *= g.burst;
+        c.stam -= 2.2 * (g.burst - 1);
+        c.bursting = true;
+      } else if (c.stam < 100){
+        c.stam += 0.4;
+      }
+      c.v = v;  // remembered for motion-based detection
+      c.x += Math.cos(c.dir) * v;
+      c.y += Math.sin(c.dir) * v;
+      if (c.x < 0) c.x += W; if (c.x >= W) c.x -= W;
+      if (c.y < 0) c.y += H; if (c.y >= H) c.y -= H;
+
+      // ---- metabolism ----
+      c.energy -= 0.04 + g.size*0.026 + g.sense*0.0010 + v*v*g.size*0.008
+                + (g.burst-1)*g.size*0.004;  // carrying a weapon costs, drawn or not
+
+      // ---- eat ----
+      if (best && !threatened){
+        const reach = g.size + (bestKind==='prey' ? best.genes.size : 2.5);
+        if (bestDist < reach + v){
+          if (bestKind === 'plant' && best.alive){
+            c.energy += best.e * herbEff; best.alive = false;
+          } else if (bestKind === 'remains' && best.alive){
+            c.energy += best.e * scavEff; best.alive = false;
+          } else if (bestKind === 'prey' && best.alive){
+            best.alive = false;
+            // a body is a feast: it holds a lifetime of grazing, not just current reserves
+            c.energy += (best.energy*0.5 + best.genes.size*25) * (0.3 + 0.7*g.carn);
+            c.cooldown = 60;
+            S.remains.push({ x:best.x, y:best.y, e: best.genes.size*4, alive:true, decay: 600 });
+            const L = S.lineages.get(best.lin); if (L) L.count--;
+          }
+          if (c.energy > 65 + g.size*22) c.energy = 65 + g.size*22; // storage cap
+        }
+      }
+
+      // ---- reproduce ----
+      const thresh = 50 + g.size*12;
+      if (c.energy > thresh && c.age > 150 && c.cooldown <= 0 && S.creatures.length < S.maxPop){
+        const childGenes = mutate(g);
+        const childE = c.energy * 0.42;
+        c.energy *= 0.46; c.cooldown = 120;
+        let lin = c.lin;
+        const L = S.lineages.get(c.lin);
+        if (L && geneDist(childGenes, L.founder) > 0.42){
+          lin = newLineage(childGenes, c.lin);
+          const NL = S.lineages.get(lin);
+          logEvent('good', `<b>${NL.name}</b> diverges from ${L.name} — ${describeShift(L.founder, childGenes)}.`);
+        }
+        const a = rng()*Math.PI*2;
+        spawnCreature(childGenes, c.x + Math.cos(a)*6, c.y + Math.sin(a)*6, childE, lin, c.gen+1);
+      }
+
+      // ---- death ----
+      const maxAge = 2400 + g.size*350;
+      if (c.energy <= 0 || c.age > maxAge){
+        c.alive = false;
+        S.remains.push({ x:c.x, y:c.y, e: g.size*6, alive:true, decay: 600 });
+        const L = S.lineages.get(c.lin); if (L) L.count--;
+      }
+    }
+
+    // decay remains
+    for (const r of S.remains){
+      r.decay--; r.e *= 0.999;
+      if (r.decay <= 0 || r.e < 1) r.alive = false;
+    }
+
+    // compact arrays
+    if (S.tick % 7 === 0){
+      S.creatures = S.creatures.filter(c=>c.alive);
+      S.plants    = S.plants.filter(p=>p.alive);
+      S.remains   = S.remains.filter(r=>r.alive);
+    }
+
+    // lineage extinction notices
+    if (S.tick % 60 === 0){
+      for (const [id, L] of S.lineages){
+        if (!L.extinct && L.count <= 0 && S.tick - L.born > 200){
+          L.extinct = true;
+          if (L.peak >= 20)
+            logEvent('bad', `Lineage <b>${L.name}</b> has gone extinct (peak ${L.peak}, lived ${S.tick - L.born} ticks).`);
+        }
+      }
+    }
+
+    // sample history
+    if (S.tick % 24 === 0){
+      let herb=0, omni=0, pred=0, sSp=0, sSz=0, sSe=0, sCa=0, sBu=0, n=0;
+      for (const c of S.creatures){
+        if (!c.alive) continue;
+        n++;
+        const ca = c.genes.carn;
+        if (ca < 0.33) herb++; else if (ca < 0.66) omni++; else pred++;
+        sSp += c.genes.speed; sSz += c.genes.size; sSe += c.genes.sense; sCa += ca;
+        sBu += c.genes.burst || 1;
+      }
+      S.history.push({
+        t: S.tick, herb, omni, pred, plants: S.plants.length,
+        speed: n? sSp/n:0, size: n? sSz/n:0, sense: n? sSe/n:0, carn: n? sCa/n:0,
+        burst: n? sBu/n:1,
+      });
+      if (S.history.length > 360) S.history.splice(0, 60);
+      if (n === 0 && !S.silent){
+        S.silent = true;
+        logEvent('bad', `<b>The world has gone silent.</b> Every creature is gone. (Genesis can reseed life.)`);
+      } else if (n > 0) S.silent = false;
+    }
+
+    return S;
+  }
+
+  // --- interventions ---
+  function meteor(){
+    let killed = 0;
+    for (const c of S.creatures){
+      if (c.alive && rng() < 0.75){
+        c.alive = false; killed++;
+        S.remains.push({ x:c.x, y:c.y, e: c.genes.size*6, alive:true, decay:600 });
+        const L = S.lineages.get(c.lin); if (L) L.count--;
+      }
+    }
+    for (const p of S.plants) if (rng() < 0.55) p.alive = false;
+    logEvent('bad', `<b>☄ Meteor.</b> ${killed} creatures perish in the impact. The bottleneck begins.`);
+  }
+  function bloom(){
+    seedPlants(450);
+    S.plantBoost = 2.2; S.boostUntil = S.tick + 900;
+    logEvent('good', `<b>🌱 Bloom.</b> The land turns lush. Plant growth surges.`);
+  }
+  function drought(){
+    S.plantBoost = 0.12; S.boostUntil = S.tick + 1600;
+    logEvent('warn', `<b>☀ Drought.</b> Plant growth withers for a long season.`);
+  }
+
+  // --- serialization ---
+  function save(){
+    return JSON.stringify({
+      v: 2, eco: ECO, seed: S.seed, W: S.W, H: S.H, tick: S.tick,
+      nextId: S.nextId, nextLin: S.nextLin, highestGen: S.highestGen,
+      plantBoost: S.plantBoost, boostUntil: S.boostUntil,
+      creatures: S.creatures.filter(c=>c.alive).map(c=>({
+        id:c.id, lin:c.lin, gen:c.gen, x:+c.x.toFixed(1), y:+c.y.toFixed(1),
+        dir:+c.dir.toFixed(2), energy:+c.energy.toFixed(1), age:c.age, genes:c.genes })),
+      plants: S.plants.filter(p=>p.alive).map(p=>({x:+p.x.toFixed(1), y:+p.y.toFixed(1), e:+p.e.toFixed(1)})),
+      remains: S.remains.filter(r=>r.alive).map(r=>({x:+r.x.toFixed(1), y:+r.y.toFixed(1), e:+r.e.toFixed(1), decay:r.decay})),
+      lineages: [...S.lineages.entries()],
+      history: S.history, events: S.events.slice(-200),
+    });
+  }
+  function load(json){
+    const d = JSON.parse(json);
+    const sx = W / d.W, sy = H / d.H;
+    S.tick = d.tick; S.nextId = d.nextId; S.nextLin = d.nextLin;
+    S.highestGen = d.highestGen || 1;
+    S.plantBoost = d.plantBoost || 1; S.boostUntil = d.boostUntil || 0;
+    S.creatures = d.creatures.map(c=>({ ...c, x:c.x*sx, y:c.y*sy, alive:true, cooldown:60, target:null,
+      fleeing:false, stam:100, bursting:false, v:0, genes:{ burst:1.0, ...c.genes } }));
+    S.plants  = d.plants.map(p=>({ ...p, x:p.x*sx, y:p.y*sy, alive:true }));
+    S.remains = d.remains.map(r=>({ ...r, x:r.x*sx, y:r.y*sy, alive:true }));
+    S.lineages = new Map(d.lineages);
+    S.history = d.history || []; S.events = d.events || [];
+    logEvent('good', `<b>World restored</b> from a saved jar (tick ${S.tick}).`);
+  }
+
+  // initial world
+  seedPlants(700);
+  genesis(90, 'Genesis');
+
+  return { S, step, meteor, bloom, drought, genesis, save, load, fertility };
+}
+
+// ==================== END SIM CORE ====================
+
+// ==================== RENDER + UI ====================
+(function(){
+  if (typeof document === 'undefined') return; // allows headless testing
+
+  const canvas = document.getElementById('world');
+  const ctx = canvas.getContext('2d');
+  const panelW = 300;
+  let W = Math.max(600, window.innerWidth - panelW);
+  let H = Math.max(400, window.innerHeight);
+  canvas.width = W; canvas.height = H;
+
+  // World presets — discovered empirically (see experiments/predator-emergence.md):
+  // 'seasons' produces omnivore surges; 'brutal' produces omnivore empires,
+  // predator flickers, and a real risk of total extinction. You were warned.
+  const PRESETS = [
+    ['lush',    {}],
+    ['seasons', { seasonAmp: 0.7,  seasonPeriod: 4000 }],
+    ['brutal',  { seasonAmp: 0.95, seasonPeriod: 2000 }],
+  ];
+  // URL params let the museum link a pre-configured jar: ?world=brutal&speed=8
+  const qs = new URLSearchParams(location.search);
+  const qWorld = PRESETS.findIndex(p => p[0] === qs.get('world'));
+  let presetIx = qWorld >= 0 ? qWorld : 0, sim = null, selected = null;
+
+  // pre-render fertility field
+  let fieldImg = null;
+  function renderField(){
+    const off = document.createElement('canvas');
+    off.width = W; off.height = H;
+    const o = off.getContext('2d');
+    const img = o.createImageData(W, H);
+    const step = 4;
+    for (let y=0; y<H; y+=step) for (let x=0; x<W; x+=step){
+      const f = sim.fertility(x, y);
+      const r = 10 + f*8, g = 14 + f*26, b = 16 + f*14;
+      for (let dy=0; dy<step && y+dy<H; dy++) for (let dx=0; dx<step && x+dx<W; dx++){
+        const i = ((y+dy)*W + (x+dx))*4;
+        img.data[i]=r; img.data[i+1]=g; img.data[i+2]=b; img.data[i+3]=255;
+      }
+    }
+    o.putImageData(img, 0, 0);
+    fieldImg = off;
+  }
+  function newWorld(opts, label){
+    const seed = (Math.random()*2**31)|0;
+    sim = createSim(seed, W, H, opts);
+    selected = null;
+    renderField();
+    document.getElementById('seedlbl').textContent = 'seed ' + seed + ' · ' + label;
+  }
+  newWorld(PRESETS[presetIx][1], PRESETS[presetIx][0]);
+
+  function hueOf(carn){ return 160 - carn*180; } // teal → yellow → red
+  function colorOf(c, a){
+    const l = 42 + Math.min(20, c.genes.speed*8);
+    return `hsla(${hueOf(c.genes.carn)},70%,${l}%,${a})`;
+  }
+
+  function draw(){
+    ctx.drawImage(fieldImg, 0, 0);
+    const S = sim.S;
+
+    // plants
+    ctx.fillStyle = '#3f7a4c';
+    for (const p of S.plants){
+      if (!p.alive) continue;
+      const r = 0.8 + p.e/18*1.4;
+      ctx.globalAlpha = 0.35 + p.e/18*0.65;
+      ctx.fillRect(p.x-r/2, p.y-r/2, r, r);
+    }
+    ctx.globalAlpha = 1;
+
+    // remains
+    ctx.fillStyle = '#7a6a55';
+    for (const r of S.remains){
+      if (!r.alive) continue;
+      ctx.globalAlpha = Math.min(0.7, r.decay/600);
+      ctx.beginPath(); ctx.arc(r.x, r.y, 1.6 + r.e*0.06, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // creatures
+    for (const c of S.creatures){
+      if (!c.alive) continue;
+      const r = c.genes.size;
+      if (c.bursting){
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.beginPath(); ctx.arc(c.x, c.y, r+3, 0, 7); ctx.fill();
+      }
+      ctx.fillStyle = colorOf(c, 0.92);
+      ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, 7); ctx.fill();
+      // direction nub
+      ctx.fillStyle = colorOf(c, 0.5);
+      ctx.beginPath();
+      ctx.arc(c.x + Math.cos(c.dir)*(r+1.5), c.y + Math.sin(c.dir)*(r+1.5), Math.max(1, r*0.35), 0, 7);
+      ctx.fill();
+    }
+
+    // selection highlight
+    if (selected && selected.alive){
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(selected.x, selected.y, selected.genes.size+4, 0, 7); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.arc(selected.x, selected.y, selected.genes.sense, 0, 7); ctx.stroke();
+    }
+  }
+
+  // --- sparklines ---
+  function spark(id, series, colors, maxOverride){
+    const cv = document.getElementById(id), c2 = cv.getContext('2d');
+    c2.clearRect(0,0,cv.width,cv.height);
+    const H2 = cv.height, W2 = cv.width;
+    let max = maxOverride || 0;
+    if (!maxOverride) for (const s of series) for (const v of s) if (v > max) max = v;
+    if (max <= 0) max = 1;
+    series.forEach((s, si)=>{
+      c2.strokeStyle = colors[si]; c2.lineWidth = 1.2; c2.beginPath();
+      const n = s.length;
+      for (let i=0;i<n;i++){
+        const x = i/(Math.max(1,n-1))*W2, y = H2 - 3 - (s[i]/max)*(H2-7);
+        i ? c2.lineTo(x,y) : c2.moveTo(x,y);
+      }
+      c2.stroke();
+    });
+  }
+
+  function updatePanel(){
+    const S = sim.S;
+    let alive = 0; for (const c of S.creatures) if (c.alive) alive++;
+    let linAlive = 0; for (const [,L] of S.lineages) if (!L.extinct && L.count > 0) linAlive++;
+    document.getElementById('s-tick').textContent = S.tick.toLocaleString();
+    document.getElementById('s-pop').textContent = alive;
+    document.getElementById('s-plants').textContent = S.plants.length;
+    document.getElementById('s-lin').textContent = linAlive;
+    document.getElementById('s-gen').textContent = S.highestGen;
+
+    const h = S.history;
+    if (h.length > 1){
+      spark('spark-pop',
+        [h.map(d=>d.herb), h.map(d=>d.omni), h.map(d=>d.pred), h.map(d=>d.plants/6)],
+        ['#52d49a','#e0c45d','#e05d7a','#2a5c3a']);
+      spark('spark-traits',
+        [h.map(d=>d.speed/3), h.map(d=>d.size/9), h.map(d=>d.sense/120), h.map(d=>d.carn), h.map(d=>((d.burst||1)-1)/2)],
+        ['#5dc8e0','#b08de0','#e0995d','#e05d7a','#e8e8e8'], 1);
+    }
+
+    // chronicle
+    const log = document.getElementById('log');
+    const evs = S.events.slice(-9).reverse();
+    log.innerHTML = evs.map(e=>`<div class="ev-${e.kind}"><span style="color:#3d4a5a">${e.t}</span> ${e.text}</div>`).join('');
+
+    // inspector
+    const ins = document.getElementById('inspector');
+    if (selected && selected.alive){
+      const g = selected.genes;
+      const L = S.lineages.get(selected.lin);
+      const bar = (k)=>{
+        const spec = GENES[k];
+        const pct = ((g[k]-spec.min)/(spec.max-spec.min)*100).toFixed(0);
+        return `<div class="glabel"><span>${k}</span><span>${g[k].toFixed(2)}</span></div>
+                <div class="gbar"><i style="width:${pct}%"></i></div>`;
+      };
+      const diet = g.carn < 0.33 ? 'grazer' : g.carn < 0.66 ? 'omnivore' : 'predator';
+      ins.innerHTML = `
+        <div class="row"><span>lineage</span><span>${L ? L.name : '?'} (gen ${selected.gen})</span></div>
+        <div class="row"><span>diet</span><span>${diet}</span></div>
+        <div class="row"><span>energy</span><span>${selected.energy.toFixed(0)}</span></div>
+        <div class="row"><span>age</span><span>${selected.age}</span></div>
+        <div style="margin-top:6px">${GENE_KEYS.map(bar).join('')}</div>`;
+    } else {
+      ins.innerHTML = `<span id="deadnote">${selected ? 'it has died' : 'nothing selected'}</span>`;
+    }
+  }
+
+  // --- controls ---
+  const speeds = [1,2,4,8];
+  const qSpeed = parseInt(qs.get('speed'), 10);
+  let paused = false, stepsPerFrame = speeds.includes(qSpeed) ? qSpeed : 1;
+  if (presetIx !== 0) document.getElementById('b-world').textContent = 'world: ' + PRESETS[presetIx][0];
+  if (stepsPerFrame !== 1) document.getElementById('b-speed').textContent = 'speed ×' + stepsPerFrame;
+
+  document.getElementById('b-pause').onclick = (e)=>{
+    paused = !paused;
+    e.target.textContent = paused ? '▶ play' : '⏸ pause';
+  };
+  document.getElementById('b-speed').onclick = (e)=>{
+    const i = (speeds.indexOf(stepsPerFrame)+1) % speeds.length;
+    stepsPerFrame = speeds[i];
+    e.target.textContent = 'speed ×' + stepsPerFrame;
+  };
+  document.getElementById('b-meteor').onclick = ()=> sim.meteor();
+  document.getElementById('b-bloom').onclick = ()=> sim.bloom();
+  document.getElementById('b-drought').onclick = ()=> sim.drought();
+  document.getElementById('b-genesis').onclick = ()=> sim.genesis(50, 'Genesis (again)');
+  document.getElementById('b-world').onclick = (e)=>{
+    presetIx = (presetIx + 1) % PRESETS.length;
+    newWorld(PRESETS[presetIx][1], PRESETS[presetIx][0]);
+    e.target.textContent = 'world: ' + PRESETS[presetIx][0];
+  };
+  document.getElementById('b-save').onclick = ()=>{
+    const blob = new Blob([sim.save()], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `terrarium-tick${sim.S.tick}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  document.getElementById('b-load').onclick = ()=> document.getElementById('loadfile').click();
+  document.getElementById('loadfile').onchange = (e)=>{
+    const f = e.target.files[0]; if (!f) return;
+    f.text().then(t=>{
+      const d = JSON.parse(t);
+      sim = createSim(d.seed || 1, W, H, d.eco || {});  // same seed -> same fertility field
+      sim.load(t);
+      selected = null; renderField();
+      document.getElementById('seedlbl').textContent = 'seed ' + (d.seed || '?') + ' · restored';
+    });
+  };
+  window.addEventListener('keydown', (e)=>{
+    if (e.code === 'Space'){ e.preventDefault(); document.getElementById('b-pause').click(); }
+  });
+  canvas.addEventListener('click', (e)=>{
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    let best = null, bd = 14*14;
+    for (const c of sim.S.creatures){
+      if (!c.alive) continue;
+      const dx = c.x-mx, dy = c.y-my, d2 = dx*dx+dy*dy;
+      if (d2 < bd){ bd = d2; best = c; }
+    }
+    selected = best;
+    updatePanel();
+  });
+
+  // --- main loop ---
+  let frame = 0;
+  function loop(){
+    if (!paused) for (let i=0;i<stepsPerFrame;i++) sim.step();
+    draw();
+    if (frame % 12 === 0) updatePanel();
+    frame++;
+    requestAnimationFrame(loop);
+  }
+  updatePanel();
+  loop();
+})();
+</script>
+</body>
+</html>
